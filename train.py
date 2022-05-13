@@ -2,7 +2,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog,QMessageBox,QInputDialog
 import os
 from svm import trainmodel
-import shutil
 
 #linux + docker path
 #code_path_docker = '/data/.sinica_codes/gui/'
@@ -14,18 +13,15 @@ import shutil
 #windows path
 code_path = '.'
 xml_path = './data'
-video_path = 'G:/mice_project/video'
+video_path = './data'
 model_path = "./yolov5/weights/mix.pt"
 
 
 
 def makefolder(text): #xml path for each mice
-    global outside_path
     outside_path = os.path.join(xml_path,text).replace('\\','/')
     os.makedirs(outside_path)
-
-    #global docker_path  #for docker
-    #docker_path = os.path.join('/data/sinica_data', text)  #for docker
+    return outside_path
 
 
 class oneSet(QtWidgets.QGroupBox):
@@ -56,49 +52,96 @@ class oneSet(QtWidgets.QGroupBox):
     def read_movie_file(self):
         filename = QFileDialog.getOpenFileName(None,"選取"+ self.label +"影片",video_path,"MP4 File (*.MP4 *.mp4)")
         self.root_movie = filename[0]
-        #name = self.root_movie.split('/',3)  #for docker
-        #self.root_movie = os.path.join('/data',name[3]) #for docker
         self.textEdit.setText(self.root_movie)
 
 class detecting(QtCore.QThread):
-    # trigger = QtCore.pyqtSignal(int)
     finished = QtCore.pyqtSignal()
-    def __init__(self, ui, movie, xml, clss):
+    def __init__(self, ui):
         super().__init__()
-        self.movie = movie
-        self.xml = xml
         self.ui = ui
-        self.clss = clss
-        with open(ui.progress_txt ,'w') as f:
-            f.writelines("0\n")
     
     def run(self):
-        #os.system("sudo docker exec -i sinica_running_docker python3 " + work_PWD + \
-        #    "/yolov5/detect_xml.py --source {:} --facialFeature {:} --weights {:} --clss pain &".format(
-        #    self.root_pain_txt, self.root_pain_xml, model))  #for docker
-        #print("{:}\n{:}\n{:}\n".format(self.root_pain_movie, painxml , model))#print paths
-        if self.clss == 'pain':
+        for i in range(self.ui.numAddWidget):
+            self.ui.progressBar_2.setProperty("value", 0)
+            pain_movie = self.ui.set1[i].root_movie
+            health_movie = self.ui.set2[i].root_movie
+            outside_path = self.ui.outside_paths[i]
+
+            pxmlf = open(outside_path + "/pain.xml", "w")
+            pxmlf.close()
+            hxmlf = open(outside_path + "/health.xml", "w")
+            hxmlf.close()
+            pain_xml = outside_path + "/pain.xml"
+            health_xml = outside_path + "/health.xml"
+            progress_txt = code_path + '/progress.txt'
+            model = model_path
+
+            ######################## pain detect start ##################################################################
+            with open(progress_txt ,'w') as f:
+                f.writelines("0\n")
             os.system("python " + code_path + "/yolov5/detect_xml.py --source {:} --facialFeature {:} --weights {:} --clss pain &".format(
-                self.movie, self.xml , self.ui.model))
-        else:
+                pain_movie, pain_xml , model))
+            while(1):
+                loop = QtCore.QEventLoop()
+                QtCore.QTimer.singleShot(4000, loop.quit)
+                loop.exec_()
+                
+                with open(progress_txt,'r') as f:
+                    tmp = f.readlines()
+                    progress = int(tmp[-1])
+                print('---------------',progress,'---------------')
+                self.ui.progressBar_2.setProperty("value", progress)
+                if progress == 100:
+                    break
+            self.ui.mainProgress = 0.8*(self.ui.mainProgress+50/self.ui.numAddWidget)
+            self.ui.progressBar.setProperty("value", self.ui.mainProgress)
+            ##################### health detect start ########################################################################
+            with open(progress_txt ,'w') as f:
+                f.writelines("0\n")
             os.system("python " + code_path + "/yolov5/detect_xml.py --source {:} --facialFeature {:} --weights {:} --clss health &".format(
-                self.movie, self.xml , self.ui.model))
-        while(1):
-            loop = QtCore.QEventLoop()
-            QtCore.QTimer.singleShot(4000, loop.quit)
-            loop.exec_()
-            
-            with open(self.ui.progress_txt,'r') as f:  ##############progress file
-                tmp = f.readlines()
-                progress = int(tmp[-1])
-            print('---------------',progress,'---------------')
-            self.ui.progressBar_2.setProperty("value", progress)
-            if progress == 100:
-                break
-        self.ui.mainProgress = self.ui.mainProgress+50/self.ui.numAddWidget
-        self.ui.progressBar.setProperty("value", self.ui.mainProgress)
-        print("step 完成")
-        self.finished.emit()
+                health_movie, health_xml , model))
+            while(1):
+                loop = QtCore.QEventLoop()
+                QtCore.QTimer.singleShot(4000, loop.quit)
+                loop.exec_()
+                
+                with open(progress_txt,'r') as f:  ##############progress file
+                    tmp = f.readlines()
+                    progress = int(tmp[-1])
+                print('---------------',progress,'---------------')
+                self.ui.progressBar_2.setProperty("value", progress)
+                if progress == 100:
+                    break
+            self.ui.mainProgress = 0.8*(self.ui.mainProgress+50/self.ui.numAddWidget)
+            self.ui.progressBar.setProperty("value", self.ui.mainProgress)
+            ###################### SVR training ####################################################################################
+            self.ui.progressBar_2.setProperty("value", 99)
+            trainNum1 = code_path + "/trainNum1.txt"
+            trainNum2 = code_path + "/trainNum2.txt"
+            check = True
+            with open(trainNum1,"r") as f:
+                if int(f.readline()) < 10:
+                    check = False
+            with open(trainNum2,"r") as f:
+                if int(f.readline()) < 10:
+                    check = False
+            if check:
+                trainmodel.svr(pain_xml,health_xml,outside_path)
+                loop = QtCore.QEventLoop()
+                QtCore.QTimer.singleShot(4000, loop.quit)
+                loop.exec_()
+                self.ui.progressBar_2.setProperty("value", 100)
+                self.ui.mainProgress = 100*(i+1)/self.ui.numAddWidget
+                self.ui.progressBar.setProperty("value", self.ui.mainProgress)
+            else:
+                self.ui.msgW.append(QMessageBox())
+                self.ui.msgW[self.error].setText("Training {:} less than 10 samples".format(self.ui.saveFolder[i]))
+                self.ui.msgW[self.error].setWindowTitle("Warning")
+                self.ui.msgW[self.error].show()
+                self.error = self.error + 1
+
+        print("完成")
+        self.finished.emit() 
         
 
 class Ui_train(object):
@@ -193,7 +236,6 @@ class Ui_train(object):
         self.box2 = QtWidgets.QGridLayout(self.scrollAreaWidgetContents_2)
         self.set2.append(oneSet(self.numAddWidget,'健康'))
         self.box2.addWidget(self.set2[0])
-        ###
         
     def addSet(self):
         self.numAddWidget += 1
@@ -211,161 +253,41 @@ class Ui_train(object):
         self.set2.pop()
         self.numAddWidget -= 1
 
-
     def iterate(self):
         for i in range(self.numAddWidget-1):
             self.root_pain_movie.append(self.set1[i])
             self.root_health_movie.append(self.set2[i])
             self.start(self)
 
-    def healthstart(self):
-        self.health_detect.start()
-
     def finish(self):
         self.msg = QMessageBox()
         self.msg.setText("Training_Finish")
         self.msg.setWindowTitle("MessageBox demo")
-        retval = msg.exec_()
+        retval = self.msg.exec_()
 
     def start(self):
-        import os
-        self.saveFolder = [] 
+        self.saveFolder = [] # svr model root folders' name
+        self.outside_paths = [] # svr model root folders
         for i in range(self.numAddWidget):
             text, ok = QInputDialog.getText(None, 'select save folder', '儲存資料夾名稱 {}'.format(i+1))
             if not ok:
                 return
-            if not os.path.isdir(xml_path + '/' + text):
-                print(xml_path + text)
-                self.saveFolder.append(text)
-                makefolder(text)
-            else:
-                while(os.path.isdir(xml_path + '/' + text)):
-                    msg = QMessageBox()
-                    msg.setText("目的地已有該資料夾，請重新命名")
-                    msg.setWindowTitle("MessageBox demo")
-                    retval = msg.exec_()
-                    text, ok = QInputDialog.getText(None, '', '儲存資料夾名稱 {}'.format(i+1))
-                    if not ok:
-                        return
-                makefolder(text)
-                self.saveFolder.append(text)
+            while(os.path.isdir(xml_path + '/' + text)):
+                msg = QMessageBox()
+                msg.setText("目的地已有該資料夾，請重新命名")
+                msg.setWindowTitle("MessageBox demo")
+                retval = msg.exec_()
+                text, ok = QInputDialog.getText(None, '', '儲存資料夾名稱 {}'.format(i+1))
+                if not ok:
+                    return
+            self.outside_paths.append(makefolder(text))
+            self.saveFolder.append(text)
         self.progressBar.setProperty("value", 0)
         self.mainProgress = 0
-        msgW = []
-        error = 0
-        for i in range(self.numAddWidget):
-            self.progressBar_2.setProperty("value", 0)
-            self.root_pain_movie = self.set1[i].root_movie
-            self.root_health_movie = self.set2[i].root_movie
+        self.msgW = []
+        self.error = 0
 
-            #work_PWD = code_path_docker  #for docker
-            #global docker_path  #for docker
-            global outside_path
-
-            #os.makedirs(outside_path + '/pain')#
-            #os.makedirs(outside_path + '/health')#
-
-            pxmlf = open(outside_path + "/pain.xml", "w")
-            pxmlf.close()
-            hxmlf = open(outside_path + "/health.xml", "w")
-            hxmlf.close()
-            painxml = outside_path + "/pain.xml"
-            healthxml = outside_path + "/health.xml"
-            #self.root_pain_xml = docker_path + '/pain.xml' #for docker
-            #self.root_health_xml = docker_path + '/health.xml' #for docker
-            self.progress_txt = code_path + '/progress.txt'
-            self.model = model_path
-            #model = work_PWD + "/yolov5/weights/mix.pt" #for docker
-
-            #-----------------------pain------------------------------------------------------------------------
-            # with open(progress_txt ,'w') as f:
-            #     f.writelines("0\n")
-            # #os.system("sudo docker exec -i sinica_running_docker python3 " + work_PWD + \
-            # #    "maskrcnn/main_mouseDectect.py -imagesList {:} -facialFeatureLog {:} -model {:} 1 &".format(
-            # #    self.root_pain_txt, self.root_pain_xml, model))  #for docker
-            # #print("{:}\n{:}\n{:}\n".format(self.root_pain_movie, painxml , model))#print paths
-            # os.system("python " + code_path + "/yolov5/detect_xml.py --source {:} --facialFeature {:} --weights {:} --clss pain &".format(
-            # self.root_pain_movie, painxml , model))
-            self.pain_detect = detecting(self, self.root_pain_movie, painxml, 'pain') 
-            self.health_detect = detecting(self, self.root_health_movie, healthxml, 'health')
-            self.pain_detect.start()
-            self.pain_detect.finished.connect(self.healthstart)
-            self.health_detect.finished.connect(self.finish)
-            
-            #yolo progress
-            # while(1):
-            #     loop = QtCore.QEventLoop()
-            #     QtCore.QTimer.singleShot(4000, loop.quit)
-            #     loop.exec_()
-                
-            #     with open(progress_txt,'r') as f:  ##############progress file
-            #         tmp = f.readlines()
-            #         progress = int(tmp[-1])
-                
-            #     self.progressBar_2.setProperty("value", progress)
-            #     if progress == 100:
-            #         break
-            # mainProgress = mainProgress+50/self.numAddWidget
-            # self.progressBar.setProperty("value", mainProgress)
-            # print("pain xml 完成")
-
-            # --------------------health------------------------------------------------------------------------------------------
-        #     with open(progress_txt ,'w') as f:
-        #         f.writelines("0\n")
-
-        #     #os.system("sudo docker exec -i sinica_running_docker python3 " + work_PWD + \
-        #     #    "maskrcnn/main_mouseDectect.py -imagesList {:} -facialFeatureLog {:} -model {:} 2 &".format(
-        #     #    self.root_health_txt, self.root_health_xml, model))  #for docker
-
-        #     os.system("python " + code_path + "/yolov5/detect_xml.py --source {:} --facialFeature {:} --weights {:} --clss health &".format(
-        #     self.root_health_movie, healthxml , model))
-
-        #     ###get progress
-        #     while(1):
-        #         loop = QtCore.QEventLoop()
-        #         QtCore.QTimer.singleShot(4000, loop.quit)
-        #         loop.exec_()
-        #         with open(progress_txt,'r') as f:  ##############progress file
-        #             tmp = f.readlines()
-        #             progress = int(tmp[-1])
-        #         self.progressBar_2.setProperty("value", progress)
-        #         if progress == 100:
-        #             break
-        #     mainProgress = mainProgress+50/self.numAddWidget
-        #     self.progressBar.setProperty("value", mainProgress)
-        #     ###process done
-        #     print("health xml 完成")
-
-        #     #---------------svr----------------------------------------------------------------------------------------
-        #     pain = outside_path + "/pain.xml"
-        #     no_pain = outside_path + "/health.xml"
-
-        #     trainNum1 = code_path + "/trainNum1.txt"
-        #     trainNum2 = code_path + "/trainNum2.txt"
-        #     check = True
-        #     with open(trainNum1,"r") as f:
-        #         if int(f.readline()) < 10:
-        #             check = False
-        #     with open(trainNum2,"r") as f:
-        #         if int(f.readline()) < 10:
-        #             check = False
-            
-        #     if check:
-        #         trainmodel.svr(pain,no_pain,outside_path)
-        #         loop = QtCore.QEventLoop()
-        #         QtCore.QTimer.singleShot(4000, loop.quit)
-        #         loop.exec_()
-        #         mainProgress = 100*(i+1)/self.numAddWidget
-        #         self.progressBar.setProperty("value", mainProgress)
-        #     else:
-        #         msgW.append(QMessageBox())
-        #         msgW[error].setText("Training {:} less than 10 samples".format(self.saveFolder[i]))
-        #         msgW[error].setWindowTitle("Warning")
-        #         msgW[error].show()
-        #         error = error + 1
-
-        # msg = QMessageBox()
-        # msg.setText("Training_Finish")
-        # msg.setWindowTitle("MessageBox demo")
-        # retval = msg.exec_()
+        self.detect_process = detecting(self)
+        self.detect_process.start()
+        self.detect_process.finished.connect(self.finish)
         

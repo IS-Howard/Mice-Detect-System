@@ -17,7 +17,7 @@ def svr(pain_tree_root, nopain_tree_root, save_root):
     pain_root = pain_tree.getroot()
     nopain_root = nopain_tree.getroot()
 
-    save_root = save_root + r'\train.train'
+    save_root = save_root + r'/train.train'
     #print("save_root")
     nopain_child = []
     child = []
@@ -110,10 +110,10 @@ def svr(pain_tree_root, nopain_tree_root, save_root):
     best_health = 100
     X = np.vstack((pain,health))
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=0)
-    #model = svr.fit(X_train, y_train)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    # model = svr.fit(X_train, y_train)
 
-    #with open(save_root, "wb+") as train:
+    # with open(save_root, "wb+") as train:
     #    joblib.dump(svr, train)
     #    train.close()
 

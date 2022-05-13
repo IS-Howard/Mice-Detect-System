@@ -5,9 +5,6 @@ import os
 import shutil
 import xml.etree.cElementTree as ET
 
-model_address = ''
-global_path = ''
-text = ''
 
 #linux + docker path
 #code_path_docker = '/data/.sinica_codes/gui/'
@@ -17,22 +14,10 @@ text = ''
 #model_path = "/home/lorsmip/.sinica_codes/gui/yolov5/weights/mix.pt"
 
 #windows path
-code_path = 'D:/code/py_project/gui-yolo-mod'
-xml_path = 'D:/code/py_project/gui-yolo-mod/data'
-video_path = 'D:/mice_project/video'
-model_path = "D:/code/py_project/gui-yolo-mod/yolov5/weights/mix.pt"
-
-
-def makefolder():
-    global model_address
-    global text
-    text, ok = QInputDialog.getText(None, 'select save folder', '儲存資料夾名稱')
-    
-    if ok and text:
-        os.makedirs(model_address + '/' + text)
-
-    global test_address
-    test_address = model_address + '/' + text
+code_path = '.'
+xml_path = './data'
+video_path = './data'
+model_path = "./yolov5/weights/mix.pt"
 
 def check_xml(xmlfile):
     tree = ET.ElementTree(file=xmlfile)
@@ -55,6 +40,7 @@ class oneVideo(QtWidgets.QGroupBox):
         QtWidgets.QGroupBox.__init__(self)
         self.numAddWidget2 = numAddWidget2
         self.root_movie = ''
+        self.docker_movie = ''
         self.initSubject()
         self.organize()
 
@@ -74,10 +60,8 @@ class oneVideo(QtWidgets.QGroupBox):
         layoutV.addWidget(self.toolButton_4,0,2)
 
     def read_movie(self):
-        filename = QFileDialog.getOpenFileName(None,"選取老鼠影片{}".format(self.numAddWidget2),"/home/lorsmip/sinica_videos","MP4 File (*.MP4 *.mp4)")
+        filename = QFileDialog.getOpenFileName(None,"選取老鼠影片{}".format(self.numAddWidget2),video_path,"MP4 File (*.MP4 *.mp4)")
         self.root_movie = filename[0]
-        name = self.root_movie.split('/',3)
-        self.root_movie = os.path.join('/data',name[3])
         self.lineEdit_2.setText(self.root_movie)
 
 
@@ -148,14 +132,107 @@ class oneModel(QtWidgets.QGroupBox):
         self.numAddWidget2 -= 1
 
     def read_model(self):
-        filename = QFileDialog.getOpenFileName(None, "選取訓練模型", "/home/lorsmip/sinica_data","train File (*.train)")
+        filename = QFileDialog.getOpenFileName(None, "選取訓練模型", xml_path,"train File (*.train)")
         self.root_model = filename[0]
-        self.model_path = self.root_model.split('/train.train')[0]
-        name = self.root_model.split('/',3)
-        self.root_model = os.path.join('/data',name[3])
         self.lineEdit.setText(self.root_model)
-        self.address = os.path.split(self.root_model)[0]
+        self.model_path = self.root_model.split('/train.train')[0]
 
+class detecting(QtCore.QThread):
+    finished = QtCore.pyqtSignal()
+    def __init__(self, ui):
+        super().__init__()
+        self.ui = ui
+    
+    def run(self):
+        for i in range(self.ui.numAddWidget):
+            progress_txt = code_path + '/progress.txt'
+            global_path = self.ui.set1[i].model_path
+            test_address = global_path + '/tests'
+            if not os.path.isdir(test_address):
+                os.makedirs(test_address)
+            check = []
+            
+            model = model_path
+
+            files = [_ for _ in os.listdir(test_address) if _.endswith('.xml')]
+            test = [_ for _ in files if 'test' in _]
+            if len(test) == 0:
+                maximum_test = 0
+            else:
+                test.sort(key=lambda x:int(x[4:-4]))
+                maximum_test = int(test[-1][4:-4])
+            
+            for j in range(self.ui.set1[i].numAddWidget2):
+                self.ui.progressBar_2.setProperty("value", 0)
+                testnum = j + 1 + maximum_test
+                movie = self.ui.set1[i].set2[j].root_movie
+                testxml = test_address + '/test{}.xml'.format(testnum)
+
+                if not os.path.isfile(testxml):
+                    cf = open(testxml,"w")
+                    cf.close()
+               
+                ###############################yolo############################################################
+                with open(progress_txt ,'w') as f:
+                    f.writelines("0\n")
+                os.system("python " + code_path + "/yolov5/detect_xml.py --source {:} --facialFeature {:} --weights {:} --clss pain &"\
+                        .format(movie, testxml , model))
+                
+                while(1):
+                    loop = QtCore.QEventLoop()
+                    QtCore.QTimer.singleShot(4000, loop.quit)
+                    loop.exec_()
+                    with open(progress_txt,'r') as f:  ##############progress file
+                        tmp = f.readlines()
+                        progress = int(tmp[-1])
+                    self.ui.progressBar_2.setProperty("value", progress)
+                    if progress == 100:
+                        break
+                print('face detect 完成')
+                self.ui.mainProgress = self.ui.mainProgress+100/(self.ui.numAddWidget*self.ui.set1[i].numAddWidget2)
+                self.ui.progressBar.setProperty("value", self.ui.mainProgress)
+                ###process done
+                
+                if check_xml(testxml) == True:
+                    check.append(True)
+                else:
+                    check.append(False)
+                # with open(trainNum1,"r") as f:
+                #     if int(f.readline()) == 0:
+                #         check[j] = False
+                # shutil.rmtree(global_path + '/test{}'.format(j + 1 + maximum_test))
+                
+            ########### predict plot ################################################################
+            pain = global_path + '/pain.xml'
+            no_pain = global_path + '/health.xml'
+
+            test_movie = []
+            previous = []
+            for j in range(maximum_test):
+                previous.append(check_xml(test_address + '/test{}.xml'.format(j + 1)))
+
+            for j in range(maximum_test):     
+                if previous[j] == True:
+                    test_movie.append(test_address + '/test{}.xml'.format(j + 1))
+
+            for j in range(self.ui.set1[i].numAddWidget2):
+                if check[j]:
+                    test_movie.append(test_address + '/test{}.xml'.format(j + 1 + maximum_test))
+                else:
+                    path = global_path.split('/')
+                    folder_name = path[-1]
+                    self.ui.msgW.append(QMessageBox())
+                    self.ui.msgW[self.ui.error].setText("Testing Model:{:} No.{:} no samples".format(folder_name, j + 1 + maximum_test))
+                    self.ui.msgW[self.ui.error].setWindowTitle("Warning")
+                    #msgW[self.ui.error].show()
+                    self.ui.error = self.ui.error + 1
+
+            model1 = self.ui.set1[i].root_model #global_path + '/train.train'
+            save_name = "result.png"
+
+            t.test1(no_pain,pain,test_movie,model1, save_name) #save in model path
+        print("step 完成")
+        self.finished.emit()
 
 
 class Ui_Test(object):
@@ -217,7 +294,6 @@ class Ui_Test(object):
         self.progressBar_2.setProperty("value", 100)
         self.progressBar_2.setObjectName("progressBar_2")
 
-
     def addSet(self):
         self.numAddWidget += 1
         self.set1.append(oneModel(self.numAddWidget))
@@ -229,105 +305,23 @@ class Ui_Test(object):
         self.set1.pop()
         self.numAddWidget -= 1
 
+    def finish(self):
+        for i in range(self.error):
+            self.msgW[i].exec()
+        self.msg = QMessageBox()
+        self.msg.setText("Testing_Finish")
+        self.msg.setWindowTitle("MessageBox demo")
+        retval = self.msg.exec_()
+
+
     def starttest(self):
-        #work_PWD = code_path_docker  #for docker
-        global model_address
-        global global_path
-        test_movie = []
-        progress_txt = code_path + '/progress.txt'
+
         self.progressBar.setProperty("value", 0)
-        mainProgress = 0
-        trainNum1 = code_path + '/trainNum1.txt'
-        error = 0
-        msgW = []
+        self.mainProgress = 0
+        self.test_movie = []
+        self.error = 0
+        self.msgW = []
 
-        for i in range(self.numAddWidget):
-            global_path = self.set1[i].model_path
-            model_address = self.set1[i].address
-            check = []
-            
-            model = model_path
-            #model = work_PWD + "/yolov5/weights/mix.pt" #for docker
-
-            files = [_ for _ in os.listdir(global_path) if _.endswith('.xml')]
-            test = [_ for _ in files if 'test' in _]
-            if len(test) == 0:
-                maximum_test = 0
-            else:
-                test.sort(key=lambda x:int(x[4:-4]))
-                maximum_test = int(test[-1][4:-4])
-            
-            for j in range(self.set1[i].numAddWidget2):
-                self.progressBar_2.setProperty("value", 0)
-
-                if not os.path.isdir(global_path + '/test{}'.format(j + 1 + maximum_test)):
-                    os.makedirs(global_path + '/test{}'.format(j + 1 + maximum_test))
-                if not os.path.isfile(global_path + '/test{}.txt'.format(j + 1 + maximum_test)):
-                    os.mknod(global_path + '/test{}.txt'.format(j + 1 + maximum_test))
-                if not os.path.isfile(global_path + '/test{}.xml'.format(j + 1 + maximum_test)):
-                    os.mknod(global_path + '/test{}.xml'.format(j + 1 + maximum_test))
-               
-                ###############################yolo############################################################
-                with open(progress_txt ,'w') as f:
-                    f.writelines("0\n")
-                #os.system("sudo docker exec -i sinica_running_docker python3 " + work_PWD + "maskrcnn/main_mouseDectect.py -imagesList {:} -facialFeatureLog {:} -model {:} 1 &".format(
-                #    model_address + "/test{}.txt".format(j + 1 + maximum_test), model_address + "/test{}.xml".format(j + 1 + maximum_test), model))
-                os.system("python ./yolov5/detect_xml.py --source " + self.set1[i].set2[j].root_movie, test_address + \
-                    " --facialFeature " + test_address + '/test{}.xml'.format(j + 1 + maximum_test) + \
-                    " --weights " + model)
-                
-                while(1):
-                    loop = QtCore.QEventLoop()
-                    QtCore.QTimer.singleShot(4000, loop.quit)
-                    loop.exec_()
-                    with open(progress_txt,'r') as f:  ##############progress file
-                        tmp = f.readlines()
-                        progress = int(tmp[-1])
-                    self.progressBar_2.setProperty("value", progress)
-                    if progress == 100:
-                        break
-                print('face detect 完成')
-                mainProgress = mainProgress+100/(self.numAddWidget*self.set1[i].numAddWidget2)
-                self.progressBar.setProperty("value", mainProgress)
-                ###process done
-                shutil.rmtree(global_path + '/test{}'.format(j + 1 + maximum_test))
-                
-                if check_xml(global_path + '/test{}.xml'.format(j + 1 + maximum_test)) == True:
-                    check.append(True)
-                else:
-                    check.append(False)
-                # with open(trainNum1,"r") as f:
-                #     if int(f.readline()) == 0:
-                #         check[j] = False
-                
-
-            pain = global_path + '/pain.xml'
-            no_pain = global_path + '/health.xml'
-
-            test_movie = []
-            previous = []
-            for j in range(maximum_test):
-                previous.append(check_xml(global_path + '/test{}.xml'.format(j + 1)))
-
-            for j in range(maximum_test):     
-                if previous[j] == True:
-                    test_movie.append(global_path + '/test{}.xml'.format(j + 1))
-
-            for j in range(self.set1[i].numAddWidget2):
-                if check[j]:
-                    test_movie.append(global_path + '/test{}.xml'.format(j + 1 + maximum_test))
-                else:
-                    path = global_path.split('/')
-                    folder_name = path[-1]
-                    msgW.append(QMessageBox())
-                    msgW[error].setText("Testing Model:{:} No.{:} no samples".format(folder_name, j + 1 + maximum_test))
-                    msgW[error].setWindowTitle("Warning")
-                    #msgW[error].show()
-                    error = error + 1
-
-            model1 = global_path + '/train.train'
-
-            t.test1(no_pain,pain,test_movie,model1)#!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        for i in range(error):
-            msgW[i].exec()
+        self.detect_process = detecting(self)
+        self.detect_process.start()
+        self.detect_process.finished.connect(self.finish)

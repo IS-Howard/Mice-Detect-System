@@ -12,7 +12,7 @@ import pyqtgraph as pg
 import os 
 
 
-def test1(health, pain, test_movie, model):
+def test1(health, pain, test_movie, model, save_name):
     len_test = len(test_movie)
     hr_root = []
     pain_tree = ET.ElementTree(file=pain)
@@ -37,8 +37,8 @@ def test1(health, pain, test_movie, model):
         for name_count in range(5):
             aaa = []
             for i in range(len(test_child[3])):
-                x = (int(test_child[name_count + 3][i].attrib['x']) + int(test_child[name_count + 3][i].attrib['width']) * 0.5)
-                y = (int(test_child[name_count + 3][i].attrib['y']) + int(test_child[name_count + 3][i].attrib['height']) * 0.5)
+                x = (int(test_child[name_count + 2][i].attrib['x']) + int(test_child[name_count + 2][i].attrib['width']) * 0.5)
+                y = (int(test_child[name_count + 2][i].attrib['y']) + int(test_child[name_count + 2][i].attrib['height']) * 0.5)
                 aaa.append([x, y])
             test_LOC[LOC_name[name_count]] = aaa
 
@@ -67,7 +67,7 @@ def test1(health, pain, test_movie, model):
         data.append(test)
 
     path,name = os.path.split(model)
-    fname = os.path.join(path,'result.png')
+    fname = os.path.join(path,save_name)
 
     with open(model,"rb+") as train:
         name = ['health','pain']
