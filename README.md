@@ -3,7 +3,7 @@ Pain analysis system of mice, it can train the classification model by selected 
 
 ## Structure
 
-![structure](.\data\structure.png)
+![structure](data/structure.png)
 
 * Based on the paper https://hdl.handle.net/11296/a55786
   - Replaced the Mask-RCNN part with YOLOv5 to detect landmarks
@@ -31,8 +31,8 @@ pip install -r requirements.txt
 
 * Training
 
-![train](.\data\train.gif)
+![train](data\train.gif)
 
 * Inference (Testing)
 
-![test](.\data\test.gif)
+![test](data\test.gif)
