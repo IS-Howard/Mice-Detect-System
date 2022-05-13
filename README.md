@@ -27,6 +27,12 @@ pip install -r requirements.txt
 
 * Install pytorch (torch==1.6.0+cu101, torchvision==0.7.0+cu101) manually from the official website
 
+## Run
+
+```Shell
+python start.py
+```
+
 ## Operation instruction
 
 * Training
