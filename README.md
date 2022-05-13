@@ -31,8 +31,8 @@ pip install -r requirements.txt
 
 * Training
 
-![train](data\train.gif)
+![train](data/train.gif)
 
 * Inference (Testing)
 
-![test](data\test.gif)
+![test](data/test.gif)
