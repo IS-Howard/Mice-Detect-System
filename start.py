@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication,QMainWindow,QDialog
 from test import *
 from train import *
 from window import *
+from load import *
 
 class parentWindow(QMainWindow):
     def __init__(self):
@@ -23,7 +24,11 @@ class testWindow(QDialog):
         self.child = Ui_Test()
         self.child.setupUi(self)
 
-
+class LoadWindow(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        self.child = Loader()
+        self.child.initUI(self)
 
 
 # if __name__=="__main__":
@@ -39,12 +44,13 @@ if __name__=="__main__":
     windows = parentWindow()
     training = trainWindow()
     testing = testWindow()
+    loading = LoadWindow()
 
-    trainbutton = windows.main_ui.pushButton
-    trainbutton.clicked.connect(training.show)
+    button1 = windows.main_ui.pushButton
+    button1.clicked.connect(loading.show)
 
-    testbutton = windows.main_ui.pushButton_2
-    testbutton.clicked.connect(testing.show)
+    button2 = windows.main_ui.pushButton_2
+    button2.clicked.connect(testing.show)
 
     windows.show()
     sys.exit(app.exec_())
