@@ -163,9 +163,10 @@ class Loader(object):
         sel = load_load(self.namelist[ind[0]])
         editbox = Editor(sel)
         editbox.exec()
-        self.list_widget.takeItem(ind[0])
-        self.list_widget.insertItem(ind[0], editbox.list_item)
-        self.namelist[ind[0]] = editbox.name
+        if editbox.change:
+            self.list_widget.takeItem(ind[0])
+            self.list_widget.insertItem(ind[0], editbox.list_item)
+            self.namelist[ind[0]] = editbox.name
 
 
 class Editor(QDialog):
@@ -178,6 +179,7 @@ class Editor(QDialog):
         self.age_edit.setText(sel[2])
         self.weight_edit.setText(sel[3])
         self.file_edit.setText(sel[4])
+        self.change = False
 
     def initUI(self):
         # Name
@@ -230,6 +232,7 @@ class Editor(QDialog):
         self.file_edit.setText(file_path)
 
     def editObject(self):
+        self.change=True
         error_box = QMessageBox()
         error_box.setIcon(QMessageBox.Warning)
         error_box.setWindowTitle("Error")

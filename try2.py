@@ -63,8 +63,6 @@ class ObjectCreator(QMainWindow):
         central_widget.setLayout(hbox)
         self.setCentralWidget(central_widget)
 
-        self.setCentralWidget(central_widget)
-
     def openFileDialog(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select File")
         self.file_edit.setText(file_path)
