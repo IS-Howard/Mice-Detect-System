@@ -1,26 +1,10 @@
 # pip install -r requirements.txt
 
-# yolo ----------------------------------------
-Cython
-matplotlib
-numpy
-opencv-python>=4.1.2
-pillow
-PyYAML>=5.3
-scipy>=1.4.1
-tensorboard>=2.2
-#pytorch required installed manually
-#torch==1.6.0+cu101
-#torchvision==0.7.0+cu101
-tqdm>=4.41.0
-
-# svm
-sklearn
-
 #gui
 pyQt5
 pyqtgraph
 
 #sql
 mysql-connector-python
+
 # docker run -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql
