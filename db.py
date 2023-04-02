@@ -1,6 +1,6 @@
 import mysql.connector as ms
 
-def db_init():
+def load_init():
     connection = ms.connect(host='localhost', port='3306', user='root', password='root')
     cursor = connection.cursor()
     #check db exist or create
@@ -84,9 +84,10 @@ def update_load(original_name,name,gender,age,weight,file_path):
     cursor.execute("USE `micedb`;")
 
     #check exist
-    cursor.execute("SELECT * FROM `load` WHERE `name`='{:}';".format(name))
-    if cursor.fetchone():
-        return -1
+    if name != original_name:
+        cursor.execute("SELECT * FROM `load` WHERE `name`='{:}';".format(name))
+        if cursor.fetchone():
+            return -1
     #update
     cursor.execute("""
         UPDATE `load` 

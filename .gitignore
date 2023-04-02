@@ -1,2 +1,5 @@
-__pycache__
-__pycache__/window.cpython-38.pyc
+__pycache__/
+docker/
+dlc_data/
+datadb/
+

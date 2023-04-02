@@ -18,7 +18,7 @@ class LoadWindow(QDialog):
 
 
 if __name__=="__main__":
-    db_init()
+    load_init()
 
     app = QApplication(sys.argv)
     windows = parentWindow()
