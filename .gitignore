@@ -2,5 +2,6 @@ __pycache__/
 docker/
 dlc_data/
 datadb/
+videos/
 
 *.pyc

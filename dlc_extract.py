@@ -5,20 +5,25 @@ import os
 import shutil
 
 config = r"./dlc_data/mars/config.yaml"
+progresstxt = r"./data/progress.txt"
+with open('./data/progress.txt','w') as f:
+    f.write("0")
 
-vid_path = "./datadb/basal_color.avi"
-save_path = "./datadb/"
-name = 'basal'
-coord = [1023,1439,294,674]
+# vid_path = "./datadb/basal_color.avi"
+# save_path = "./datadb/"
+# name = 'basal'
+# coord = [1023,1439,294,674]
 
-# parser = ArgumentParser()
-# parser.add_argument("vid_path", type=str)
-# parser.add_argument("save_path", type=str)
-# parser.add_argument("-c", nargs='+', type=int)
-# args = parser.parse_args()
-# vid_path = args.vid_path
-# save_path = args.save_path
-# coord = args.c
+parser = ArgumentParser()
+parser.add_argument("vid_path", type=str)
+parser.add_argument("save_path", type=str)
+parser.add_argument("name", type=str)
+parser.add_argument("-c", nargs='+', type=int)
+args = parser.parse_args()
+vid_path = args.vid_path
+save_path = args.save_path
+name = args.name
+coord = args.c
 
 save_folder=save_path+'/'+ name +'/'
 if not os.path.isdir(save_folder):
@@ -47,3 +52,6 @@ for file in gen_files:
         src = save_folder+file
         shutil.copy(src,dst)
 shutil.rmtree(save_folder)
+
+with open('./data/progress.txt','w') as f:
+    f.write("1")

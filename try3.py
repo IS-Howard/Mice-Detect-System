@@ -10,7 +10,7 @@ class SelectROI(QWidget):
         super().__init__()
 
         self.image = QImage('your_image.jpg')  # replace with your own image path
-        self.selection = QRect(QPoint(100, 100), QPoint(400, 400))
+        self.selection = QRect(QPoint(100, 100), QPoint(100+50, 100+60)) #QPoint(100+416, 100+380)
         self.start_point = None
         self.end_point = None
 
@@ -36,8 +36,8 @@ class SelectROI(QWidget):
         if self.selection is not None:
             qp.drawRect(self.selection)
 
-        if self.start_point is not None and self.end_point is not None:
-            qp.drawRect(QRect(self.start_point, self.end_point))
+        # if self.start_point is not None and self.end_point is not None:
+        #     qp.drawRect(QRect(self.start_point, self.end_point))
 
         qp.end()
 
@@ -49,13 +49,16 @@ class SelectROI(QWidget):
     def mouseMoveEvent(self, event):
 
         if event.buttons() == Qt.LeftButton:
-            self.end_point = event.pos()
+            self.start_point = event.pos()
+            selection = QRect(self.start_point, QPoint(self.start_point.x()+50, self.start_point.y()+60))
+            self.selection = selection
             self.update()
+
 
     def mouseReleaseEvent(self, event):
 
         if event.button() == Qt.LeftButton:
-            selection = QRect(self.start_point, event.pos())
+            selection = QRect(self.start_point, QPoint(self.start_point.x()+50, self.start_point.y()+60))
             self.selection = selection
 
             # record the coordinates of the top-left and bottom-right corners of the ROI
@@ -66,9 +69,9 @@ class SelectROI(QWidget):
             print(f'Bottom-right corner: ({x2}, {y2})')
 
             # reset the start/end points
-            self.start_point = None
-            self.end_point = None
-            self.update()
+            # self.start_point = None
+            # self.end_point = None
+            # self.update()
 
 
 if __name__ == '__main__':

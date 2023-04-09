@@ -1,6 +1,6 @@
 
 from PyQt5.QtWidgets import QLabel, QDialog, QGridLayout, QLineEdit, QPushButton, QFileDialog, QListWidget, QComboBox, QMessageBox, QListWidgetItem
-from datetime import datetime
+# from datetime import datetime
 from db import *
 
 class Loader(object):
@@ -13,36 +13,27 @@ class Loader(object):
         Dialog.setWindowTitle('Data Loader')
         Dialog.resize(800,300)
 
-        # Name
+        # self.label1 = QLabel('checkbox for deletion')
+        # Edit attributes
         self.name_label = QLabel('Name:')
         self.name_edit = QLineEdit()
-
-        # Gender
         self.gender_label = QLabel('Gender:')
         self.gender_edit = QComboBox()
         self.gender_edit.addItems(["","Male", "Female"])
-
-        # Age
         self.age_label = QLabel('Age(week):')
         self.age_edit = QLineEdit()
-
-        # Weight
         self.weight_label = QLabel('Weight:')
         self.weight_edit = QLineEdit()
-
-        # File
         self.file_label = QLabel('File path:')
         self.file_edit = QLineEdit()
         self.file_button = QPushButton('Browse')
         self.file_button.clicked.connect(self.openFileDialog)
-
-        # Create Object Button
         self.create_button = QPushButton('Create Object')
         self.create_button.clicked.connect(self.createObject)
 
         # list area
         self.list_widget = QListWidget()
-        self.namelist = []
+        self.list_widget.itemClicked.connect(self.item_clicked)
         self.load_button = QPushButton('Load exist')
         self.load_button.clicked.connect(self.load_table)
         self.clear_button = QPushButton('Clear list')
@@ -75,8 +66,21 @@ class Loader(object):
         # Set central widget
         Dialog.setLayout(grid)
 
+        # test insert
+        insert_load('asdf1','Male','','34','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m1.avi')
+        insert_load('asdf2','','10','36','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m2.avi')
+        insert_load('asdf3','Female','15','','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m3.avi')
+        insert_load('asdf4','Female','20','29','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m4.avi')
+        insert_load('asdf5','Male','25','19','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m5.avi')
+        insert_load('asdf6','','','52','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m6.avi')
+
+        # init
+        self.namelist = []
+        self.click_sel = None
+
+
     def openFileDialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(None, "Select File")
+        file_path, _ = QFileDialog.getOpenFileName(None, "Select File", './videos', "Video File (*.avi)")
         self.file_edit.setText(file_path)
 
     def createObject(self):
@@ -125,6 +129,10 @@ class Loader(object):
             self.list_widget.addItem(list_item)
             self.namelist.append(data[0])
 
+    def item_clicked(self,item):
+        self.click_sel = self.list_widget.row(item)
+        self.list_widget.update()
+
     def clear_list(self):
         self.list_widget.clear()
         self.namelist = []
@@ -138,35 +146,25 @@ class Loader(object):
                 del_names.append(self.namelist[i])
         if len(remove_indices)==0:
             return
-        reply = QMessageBox.warning(None, 'Warning', 'The selected item would be deleted from data base', QMessageBox.Ok | QMessageBox.Close, QMessageBox.Close)
+        reply = QMessageBox.warning(None, 'Warning', 'The checked item would be deleted from data base', QMessageBox.Ok | QMessageBox.Close, QMessageBox.Close)
         if reply != QMessageBox.Ok:
             return
         del_load(del_names)
         for i in reversed(remove_indices):
             self.list_widget.takeItem(i)
             del self.namelist[i]
+        self.click_sel = None
 
     def edit_select(self):
-        ind = []
-        for i in range(self.list_widget.count()):
-            if self.list_widget.item(i).checkState() == 2:
-                ind.append(i)
-        if len(ind)==0:
+        if self.click_sel==None:
             return
-        elif len(ind) > 1:
-            error_box = QMessageBox()
-            error_box.setIcon(QMessageBox.Warning)
-            error_box.setWindowTitle("Error")
-            error_box.setText("You can only edit one item!")
-            error_box.exec_()
-            return
-        sel = load_load(self.namelist[ind[0]])
+        sel = load_load(self.namelist[self.click_sel])
         editbox = Editor(sel)
         editbox.exec()
         if editbox.change:
-            self.list_widget.takeItem(ind[0])
-            self.list_widget.insertItem(ind[0], editbox.list_item)
-            self.namelist[ind[0]] = editbox.name
+            self.list_widget.takeItem(self.click_sel)
+            self.list_widget.insertItem(self.click_sel, editbox.list_item)
+            self.namelist[self.click_sel] = editbox.name
 
 
 class Editor(QDialog):
@@ -180,6 +178,7 @@ class Editor(QDialog):
         self.weight_edit.setText(sel[3])
         self.file_edit.setText(sel[4])
         self.change = False
+        self.setWindowTitle('Edit data')
 
     def initUI(self):
         # Name
@@ -228,7 +227,7 @@ class Editor(QDialog):
         self.setLayout(grid)
 
     def openFileDialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(None, "Select File")
+        file_path, _ = QFileDialog.getOpenFileName(None, "Select File", './videos', "Video File (*.avi)")
         self.file_edit.setText(file_path)
 
     def editObject(self):
