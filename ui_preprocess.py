@@ -4,6 +4,7 @@ from PyQt5.QtCore import QRect, QPoint, Qt, QEventLoop, QTimer
 from db import *
 import cv2
 import os
+import fileinput
 
 def getframe(vid_path):
     if not os.path.isfile(vid_path):
@@ -83,11 +84,6 @@ class preprocessor(object):
         # init list
         self.load_table()
         self.click_sel = None
-        insert_crop('202105',633, 1049, 404, 784)
-        insert_crop('202106',725, 1141, 333, 713)
-        insert_crop('2021',1033, 1449, 264, 644)
-        insert_crop('2022',1023,1439,294,674)
-        insert_load('asdf7','','','52','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m7.avi','2022','G')
 
     def load_table(self):
         data_all = load_load()
@@ -96,7 +92,7 @@ class preprocessor(object):
         for data in data_all:
             if data[6]:
                 continue
-            list_item = QListWidgetItem(f"{data[0]} ({data[1]}, {data[2]}, {data[3]}) crop set:{data[5]}")
+            list_item = QListWidgetItem(f"{data[0]}\tcrop set:{data[5]}")
             list_item.setCheckState(0)
             self.list_widget.addItem(list_item)
             self.namelist.append(data[0])
@@ -180,6 +176,9 @@ class preprocessor(object):
         if len(inds)==0:
             self.led.setPixmap(self.ledG)
             return
+        
+        fail = [False,False]
+        fail_name = ['','']
         for ind in inds:
             sel_name = self.namelist[ind]
             sel = load_load(sel_name)
@@ -197,11 +196,33 @@ class preprocessor(object):
                 
                 with open('./data/progress.txt','r') as f:
                     progress = f.read()
-                print(progress)
+                #print(progress)
                 if progress == '1':
                     break
+            # check result
+            if not os.path.isfile('./datadb/'+sel_name+'_feat.sav') or not os.path.isfile('./datadb/'+sel_name+'.csv'):
+                fail[0] = True
+                if not len(fail_name[0]) ==0:
+                    fail_name[0] += ','
+                fail_name[0] += sel_name
+            else:
+                num_rows = 0
+                for line in fileinput.input(files='./datadb/'+sel_name+'.csv'):
+                    num_rows += 1
+                if num_rows < 500:
+                    fail[1] = True
+                    if not len(fail_name[1]) ==0:
+                        fail_name[1] += ','
+                    fail_name[1] += sel_name
+                else:
+                    update_load_feat(sel_name)
+        if fail[0]:
+            message = QMessageBox.warning(None, 'Warning', f'The feature of "{fail_name[0]}" not generated')
+        if fail[1]:
+            message = QMessageBox.warning(None, 'Warning', f'The data "{fail_name[1]}" generated too few samples from deeplabcut!')
 
         self.led.setPixmap(self.ledG)
+        self.load_table()
         
 
 

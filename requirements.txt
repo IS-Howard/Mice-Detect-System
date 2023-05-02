@@ -8,7 +8,19 @@ pyqtgraph
 #sql
 mysql-connector-python
 
+#other
+scikit-learn==1.2.2
+numpy==1.24.2
+
+
 # docker pull mysql (docker load -i ./docker/mysql.tar)
 # docker build -t deeplabcut ./docker --no-cache (docker load -i ./docker/deeplabcut.tar)
 # docker run --name micedb -v /home/x/mysql:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql
 # docker run -it --name dlc -v /mnt/c/Users/x/Desktop/Mice-Detect-System:/home/MDS -w /home/MDS --gpus all -d deeplabcut
+
+
+
+
+#Error response from daemon: Ports are not available Solution
+#net stop winnat
+#net start winnat

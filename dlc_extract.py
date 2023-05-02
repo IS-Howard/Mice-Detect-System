@@ -3,6 +3,27 @@ import cv2
 from argparse import ArgumentParser
 import os
 import shutil
+import pandas as pd
+import numpy as np
+from feature_process import *
+import joblib
+
+def cpcsv(src, dst):
+    raw = pd.read_csv(src)
+    raw = remove_fail(raw)
+    raw.to_csv(dst,index = False)
+
+def remove_fail(raw, complete=True):
+    ind = np.arange(3,len(raw.columns),3)
+    null_index = (np.array(raw.iloc[2:,3],dtype=float) < 0.5)
+    for i in range(1,len(ind)):
+        null_index2 = (np.array(raw.iloc[2:,ind[i]],dtype=float) < 0.5)
+        null_index = np.logical_or(null_index,null_index2)
+    if complete:
+        raw = raw.drop(labels=2+np.where(null_index)[0], axis=0)
+    else:
+        raw.loc[2+np.where(null_index)[0],1:] = np.nan
+    return raw
 
 config = r"./dlc_data/mars/config.yaml"
 progresstxt = r"./data/progress.txt"
@@ -50,8 +71,18 @@ dst = save_path+'/'+name+'.csv'
 for file in gen_files:
     if file.endswith('.csv'):
         src = save_folder+file
-        shutil.copy(src,dst)
+        # shutil.copy(src,dst)
+        cpcsv(src,dst)
 shutil.rmtree(save_folder)
+
+
+### feature preprocess ###################################################################################################################
+dlc_raw = read_dlc(dst)
+feat = count_feature(dlc_raw, feat_type='bscwtH')
+featsav = dst.replace('.csv','_feat.sav')
+joblib.dump(feat, featsav)
+
+#############################################################################################################################
 
 with open('./data/progress.txt','w') as f:
     f.write("1")

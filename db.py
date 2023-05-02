@@ -39,7 +39,7 @@ def insert_load(name,gender,age,weight,file_path,crop=None,featfile=None):
         return -1
     
     # filepath transform
-    file_path = './'+os.path.relpath(file_path, start=os.curdir)
+    file_path = './'+os.path.relpath(file_path, start=os.curdir).replace('\\','/')
 
     #insert
     if crop:
@@ -205,6 +205,82 @@ def update_load_crop(name,crop):
         SET `crop`='{:}' 
         WHERE `name`='{:}';
     """.format(crop,name))
+
+    #close
+    cursor.close()
+    connection.commit()
+    connection.close()
+    return 1
+
+def update_load_feat(name):
+    #connect
+    connection = ms.connect(host='localhost', port='3306', user='root', password='root')
+    cursor = connection.cursor()
+    cursor.execute("USE `micedb`;")
+
+    #update
+    cursor.execute("""
+        UPDATE `load` 
+        SET `featfile`='G' 
+        WHERE `name`='{:}';
+    """.format(name))
+
+    #close
+    cursor.close()
+    connection.commit()
+    connection.close()
+    return 1
+
+
+def model_init():
+    connection = ms.connect(host='localhost', port='3306', user='root', password='root')
+    cursor = connection.cursor()
+    #check db exist or create
+    cursor.execute("SHOW DATABASES;")
+    rec = cursor.fetchall()
+    rec = [j for sub in rec for j in sub]
+    if not 'micedb' in rec:
+        cursor.execute("CREATE DATABASE `micedb`;")
+    cursor.execute("USE `micedb`;")
+    #table of files
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS `model`(
+        `name` VARCHAR(100) NOT NULL PRIMARY KEY
+        );
+    """)
+    cursor.close()
+    connection.close()
+
+def load_model(sel=None):
+    #connect
+    connection = ms.connect(host='localhost', port='3306', user='root', password='root')
+    cursor = connection.cursor()
+    cursor.execute("USE `micedb`;")
+    #load
+    if not sel:
+        cursor.execute("SELECT * FROM `model`;")
+        ret = cursor.fetchall()
+    else:
+        cursor.execute("SELECT * FROM `model` WHERE `name`='{:}';".format(sel))
+        ret = cursor.fetchone()
+
+    #close
+    cursor.close()
+    connection.close()
+    return ret
+
+def insert_model(name):
+    #connect
+    connection = ms.connect(host='localhost', port='3306', user='root', password='root')
+    cursor = connection.cursor()
+    cursor.execute("USE `micedb`;")
+
+    #check exist
+    cursor.execute("SELECT * FROM `model` WHERE `name`='{:}';".format(name))
+    if cursor.fetchone():
+        return -1
+    #insert
+    cursor.execute("INSERT INTO `model` (`name`) VALUES ('{:}');".format(name))
 
     #close
     cursor.close()

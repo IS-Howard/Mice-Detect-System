@@ -3,5 +3,6 @@ docker/
 dlc_data/
 datadb/
 videos/
+WT/__pycache__/
 
 *.pyc

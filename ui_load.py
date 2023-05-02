@@ -1,5 +1,5 @@
 
-from PyQt5.QtWidgets import QLabel, QDialog, QGridLayout, QLineEdit, QPushButton, QFileDialog, QListWidget, QComboBox, QMessageBox, QListWidgetItem
+from PyQt5.QtWidgets import QLabel, QDialog, QGridLayout, QLineEdit, QPushButton, QFileDialog, QListWidget, QComboBox, QSpinBox, QMessageBox, QListWidgetItem
 # from datetime import datetime
 from db import *
 
@@ -21,9 +21,11 @@ class Loader(object):
         self.gender_edit = QComboBox()
         self.gender_edit.addItems(["","Male", "Female"])
         self.age_label = QLabel('Age(week):')
-        self.age_edit = QLineEdit()
+        self.age_edit = QSpinBox()
+        self.age_edit.setRange(0,999)
         self.weight_label = QLabel('Weight:')
-        self.weight_edit = QLineEdit()
+        self.weight_edit = QSpinBox()
+        self.weight_edit.setRange(0,999)
         self.file_label = QLabel('File path:')
         self.file_edit = QLineEdit()
         self.file_button = QPushButton('Browse')
@@ -66,14 +68,6 @@ class Loader(object):
         # Set central widget
         Dialog.setLayout(grid)
 
-        # test insert
-        insert_load('asdf1','Male','','34','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m1.avi')
-        insert_load('asdf2','','10','36','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m2.avi')
-        insert_load('asdf3','Female','15','','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m3.avi')
-        insert_load('asdf4','Female','20','29','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m4.avi')
-        insert_load('asdf5','Male','25','19','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m5.avi')
-        insert_load('asdf6','','','52','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m6.avi')
-
         # init
         self.namelist = []
         self.click_sel = None
@@ -81,6 +75,7 @@ class Loader(object):
 
     def openFileDialog(self):
         file_path, _ = QFileDialog.getOpenFileName(None, "Select File", './videos', "Video File (*.avi)")
+        file_path = file_path.replace('\\','/')
         self.file_edit.setText(file_path)
 
     def createObject(self):
@@ -98,11 +93,15 @@ class Loader(object):
             error_box.setText("Age must be a number!")
             error_box.exec_()
             return
+        elif age =="0":
+            age = ""
         weight = self.weight_edit.text()
         if weight and not weight.isdigit():
             error_box.setText("Weight must be a number!")
             error_box.exec_()
             return
+        elif weight =="0":
+            weight = ""
         if not self.file_edit.text():
             error_box.setText("No file!")
             error_box.exec_()
@@ -114,7 +113,7 @@ class Loader(object):
             error_box.setText("Name exist!")
             error_box.exec_()
             return
-        list_item = QListWidgetItem(f"{name} ({gender}, {age}, {weight})")
+        list_item = QListWidgetItem(f"{name}\t({gender}, {age}, {weight})")
         list_item.setCheckState(0)
         self.list_widget.addItem(list_item)
         self.namelist.append(name)
@@ -124,7 +123,7 @@ class Loader(object):
         self.list_widget.clear()
         self.namelist = []
         for data in data_all:
-            list_item = QListWidgetItem(f"{data[0]} ({data[1]}, {data[2]}, {data[3]})")
+            list_item = QListWidgetItem(f"{data[0]}\t({data[1]}, {data[2]}, {data[3]})")
             list_item.setCheckState(0)
             self.list_widget.addItem(list_item)
             self.namelist.append(data[0])
@@ -174,8 +173,10 @@ class Editor(QDialog):
         self.original_name = sel[0]
         self.name_edit.setText(sel[0])
         self.gender_edit.setCurrentText(sel[1])
-        self.age_edit.setText(sel[2])
-        self.weight_edit.setText(sel[3])
+        if sel[2]:
+            self.age_edit.setValue(int(sel[2]))
+        if sel[3]:
+            self.weight_edit.setValue(int(sel[3]))
         self.file_edit.setText(sel[4])
         self.change = False
         self.setWindowTitle('Edit data')
@@ -192,11 +193,13 @@ class Editor(QDialog):
 
         # Age
         self.age_label = QLabel('Age(week):')
-        self.age_edit = QLineEdit()
+        self.age_edit = QSpinBox()
+        self.age_edit.setRange(0,999)
 
         # Weight
         self.weight_label = QLabel('Weight:')
-        self.weight_edit = QLineEdit()
+        self.weight_edit = QSpinBox()
+        self.weight_edit.setRange(0,999)
 
         # File
         self.file_label = QLabel('File path:')
@@ -246,11 +249,15 @@ class Editor(QDialog):
             error_box.setText("Age must be a number!")
             error_box.exec_()
             return
+        elif age =="0":
+            age = ""
         weight = self.weight_edit.text()
         if weight and not weight.isdigit():
             error_box.setText("Weight must be a number!")
             error_box.exec_()
             return
+        elif weight =="0":
+            weight = ""
         if not self.file_edit.text():
             error_box.setText("No file!")
             error_box.exec_()
@@ -262,7 +269,7 @@ class Editor(QDialog):
             error_box.setText("Name exist!")
             error_box.exec_()
             return
-        self.list_item = QListWidgetItem(f"{name} ({gender}, {age}, {weight})")
+        self.list_item = QListWidgetItem(f"{name}\t({gender}, {age}, {weight})")
         self.list_item.setCheckState(0)
         self.name = name
         self.close()
