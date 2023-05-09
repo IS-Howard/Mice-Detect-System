@@ -4,6 +4,7 @@ from ui_window import *
 from ui_load import *
 from ui_preprocess import *
 from ui_train import *
+from ui_test import *
 from db import *
 
 class parentWindow(QMainWindow):
@@ -46,6 +47,18 @@ class trainWindow(QDialog):
         self.child.load_table()
         self.show()
 
+class testWindow(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        self.child = tester()
+        self.child.initUI(self)
+    def update_init(self):
+        self.child.itemlist = []
+        self.child.click_sel = None
+        self.child.filterbox = Filter()
+        self.child.load_table()
+        self.child.load_model()
+        self.show()
 
 if __name__=="__main__":
     # test insert
@@ -70,6 +83,7 @@ if __name__=="__main__":
     loading = LoadWindow()
     preprocess = preprocessWindow()
     train = trainWindow()
+    test = testWindow()
 
     button1 = windows.main_ui.pushButton
     button1.clicked.connect(loading.update_init)
@@ -77,6 +91,8 @@ if __name__=="__main__":
     button2.clicked.connect(preprocess.update_init)
     button3 = windows.main_ui.pushButton_3
     button3.clicked.connect(train.update_init)
+    button4 = windows.main_ui.pushButton_4
+    button4.clicked.connect(test.update_init)
 
     windows.show()
     sys.exit(app.exec_())

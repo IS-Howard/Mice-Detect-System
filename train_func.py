@@ -206,10 +206,19 @@ def train_model(pnames,nnames,split,model_name=None):
     model.fit(x_train,y_train)
     if model_name:
         joblib.dump(model,'./datadb/'+model_name+'.model')
+        joblib.dump(mclf, './datadb/'+model_name+'.mclf')
     if len(y_test)==0:
         return -1,-1,-1
     acc,fa,dr = analysis(x_test,y_test,model)
 
     return acc,fa,dr
+
+def test_model(model_name, feats):
+    model = joblib.load('./datadb/'+model_name+'.model')
+    mclf = joblib.load('./datadb/'+model_name+'.mclf')
+
+    for x in feats:
+        pred = model.predict(x)
+
 
 

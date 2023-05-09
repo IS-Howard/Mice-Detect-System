@@ -43,7 +43,7 @@ class trainer(object):
         self.clear_button.clicked.connect(self.clear_select)
         self.filter_button = QPushButton('Filter')
         self.filter_button.clicked.connect(self.filter)
-        self.resetfilter_button = QPushButton('Filter')
+        self.resetfilter_button = QPushButton('Reset Filter')
         self.resetfilter_button.clicked.connect(self.reset_filter)
         self.listlabel = QLabel('List of data')
         self.list_widget = QListWidget()

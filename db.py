@@ -287,3 +287,20 @@ def insert_model(name):
     connection.commit()
     connection.close()
     return 1
+
+def del_model(sel):
+    #connect
+    connection = ms.connect(host='localhost', port='3306', user='root', password='root')
+    cursor = connection.cursor()
+    cursor.execute("USE `micedb`;")
+
+    if type(sel) is not list:
+        cursor.execute("DELETE FROM `model` WHERE `name`='{:}';".format(sel))
+    else:
+        for ss in sel:
+            cursor.execute("DELETE FROM `model` WHERE `name`='{:}';".format(ss))
+
+    #close
+    cursor.close()
+    connection.commit()
+    connection.close()
