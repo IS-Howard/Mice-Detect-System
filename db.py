@@ -101,7 +101,8 @@ def update_load(original_name,name,gender,age,weight,file_path):
             return -1
         
     # filepath transform
-    file_path = './'+os.path.relpath(file_path, start=os.curdir)
+    file_path = './'+os.path.relpath(file_path, start=os.getcwd())
+    file_path = file_path.replace('\\','/')
 
     #update
     cursor.execute("""

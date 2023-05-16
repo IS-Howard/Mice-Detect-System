@@ -54,6 +54,7 @@ y1,y2,x1,x2 = coord[0], coord[1], coord[2], coord[3]
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 cap = cv2.VideoCapture(vid_path)
 out = cv2.VideoWriter(save_folder+'tmp.avi', fourcc, 30, (y2-y1,x2-x1))
+
 while(cap.isOpened()):
     ret, frame = cap.read()
     if ret == False:
@@ -78,9 +79,10 @@ shutil.rmtree(save_folder)
 
 ### feature preprocess ###################################################################################################################
 dlc_raw = read_dlc(dst)
-feat = count_feature(dlc_raw, feat_type='bscwtH')
-featsav = dst.replace('.csv','_feat.sav')
-joblib.dump(feat, featsav)
+if len(dlc_raw)>50:
+    feat = count_feature(dlc_raw, feat_type='bscwtH')
+    featsav = dst.replace('.csv','.feat')
+    joblib.dump(feat, featsav)
 
 #############################################################################################################################
 

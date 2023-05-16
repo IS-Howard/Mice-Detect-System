@@ -81,9 +81,12 @@ class preprocessor(object):
         # Set central widget
         Dialog.setLayout(grid)
 
-        # init list
-        self.load_table()
-        self.click_sel = None
+        # init
+        # self.load_table()
+        # self.click_sel = None
+        # self.image = QImage
+        # self.image_label = QLabel()
+        # self.image_label.setPixmap(QPixmap.fromImage(self.image))
 
     def load_table(self):
         data_all = load_load()
@@ -142,7 +145,7 @@ class preprocessor(object):
             [sel_crop,x1,x2,y1,y2] = load_crop(sel_set)
             qp = QPainter()
             qp.begin(self.image)
-            pen = QPen(Qt.red, 2, Qt.SolidLine)
+            pen = QPen(Qt.red, 5, Qt.SolidLine)
             qp.setPen(pen)
             qp.drawRect(x1,y1,x2-x1,y2-y1)
             qp.end()
@@ -168,6 +171,10 @@ class preprocessor(object):
     def genfeat(self):
         self.led.setPixmap(self.ledR)
 
+        loop = QEventLoop()
+        QTimer.singleShot(1000, loop.quit)
+        loop.exec_()
+
         save_path = './datadb/'
         inds = []
         for i in range(self.list_widget.count()):
@@ -186,7 +193,7 @@ class preprocessor(object):
                 continue
             [sel_crop,x1,x2,y1,y2] = load_crop(sel[5])
 
-            os.system(f'docker exec -i dlc python3 dlc_extract.py "{sel[4]}" "{save_path}" "{sel_name}" -c {x1} {x2} {y1} {y2} &')
+            os.system(f'docker exec -i dlc python3 ./dlc_extract.py "{sel[4]}" "{save_path}" "{sel_name}" -c {x1} {x2} {y1} {y2} &')
 
             # wait
             while(1):
@@ -200,7 +207,7 @@ class preprocessor(object):
                 if progress == '1':
                     break
             # check result
-            if not os.path.isfile('./datadb/'+sel_name+'_feat.sav') or not os.path.isfile('./datadb/'+sel_name+'.csv'):
+            if not os.path.isfile('./datadb/'+sel_name+'.feat') or not os.path.isfile('./datadb/'+sel_name+'.csv'):
                 fail[0] = True
                 if not len(fail_name[0]) ==0:
                     fail_name[0] += ','
@@ -209,7 +216,7 @@ class preprocessor(object):
                 num_rows = 0
                 for line in fileinput.input(files='./datadb/'+sel_name+'.csv'):
                     num_rows += 1
-                if num_rows < 500:
+                if num_rows < 50:
                     fail[1] = True
                     if not len(fail_name[1]) ==0:
                         fail_name[1] += ','
@@ -354,6 +361,11 @@ class Croper(QDialog):
         
         x1,x2,y1,y2 = self.crop_widget.original_coords()
 
+        if x1<0 or y1<0 or x2>=1920 or y2>=1080:
+            error_box.setText("Box out of bounds!")
+            error_box.exec_()
+            return
+
         if insert_crop(setting,x1,x2,y1,y2)==-1:
             error_box.setText("Setting name exist!")
             error_box.exec_()
@@ -405,7 +417,7 @@ class Crop_Widget(QWidget):
         qp.begin(self)
         if self.image is not None:
             qp.drawImage(QPoint(0, 0), self.image)
-        pen = QPen(Qt.red, 2, Qt.SolidLine)
+        pen = QPen(Qt.red, 5, Qt.SolidLine)
         qp.setPen(pen)
         if self.selection is not None:
             qp.drawRect(self.selection)
@@ -432,4 +444,6 @@ class Crop_Widget(QWidget):
         x2, y2 = self.selection.right(), self.selection.bottom()
         x1, y1 = x1/self.ratio, y1/self.ratio
         x2, y2 = x2/self.ratio, y2/self.ratio
+        # x1, y1 = max(x1,0), max(y1,0)
+        # x2, y2 = min(x2,self.image.size().width()/self.ratio), min(y2,self.image.size().height()/self.ratio)
         return int(x1),int(x2),int(y1),int(y2)

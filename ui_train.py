@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QLabel, QDialog, QGridLayout, QPushButton, QComboBox, QListWidget, QMessageBox, QListWidgetItem, QWidget, QLineEdit, QSpinBox, QInputDialog
+from PyQt5.QtWidgets import QLabel, QDialog, QGridLayout, QPushButton, QComboBox, QListWidget, QMessageBox, QListWidgetItem, QLineEdit, QSpinBox, QInputDialog
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 from db import *
@@ -110,12 +110,12 @@ class trainer(object):
         Dialog.setLayout(grid)
 
         # init list
-        self.itemlist = []
-        self.posSet = set()
-        self.negSet = set()
-        self.click_sel = None
-        self.filterbox = Filter()
-        self.load_table()
+        # self.itemlist = []
+        # self.posSet = set()
+        # self.negSet = set()
+        # self.click_sel = None
+        # self.filterbox = Filter()
+        # self.load_table()
 
     def load_table(self):
         data_all = load_load()
@@ -124,7 +124,7 @@ class trainer(object):
         for data in data_all:
             if data[6] != "G":
                 continue
-            list_item = QListWidgetItem(f"{data[0]}\t({data[1]}, {data[2]}, {data[3]})")
+            list_item = QListWidgetItem(f"{data[0]}\t({data[1]},\t{data[2]},\t{data[3]})")
             list_item.setCheckState(0)
             self.list_widget.addItem(list_item)
             self.itemlist.append(item(data[0],data[1],data[2],data[3]))
@@ -151,8 +151,8 @@ class trainer(object):
             if editbox.original_name != editbox.name:
                 if os.path.isfile("./datadb/"+editbox.original_name+".csv"):
                     os.rename("./datadb/"+editbox.original_name+".csv","./datadb/"+editbox.name+".csv")
-                if os.path.isfile("./datadb/"+editbox.original_name+"_feat.sav"):
-                    os.rename("./datadb/"+editbox.original_name+"_feat.sav","./datadb/"+editbox.name+"_feat.sav")
+                if os.path.isfile("./datadb/"+editbox.original_name+".feat"):
+                    os.rename("./datadb/"+editbox.original_name+".feat","./datadb/"+editbox.name+".feat")
 
     def filter(self):
         self.filterbox.signal = 0
@@ -200,7 +200,7 @@ class trainer(object):
             return
         for name in del_names:
             csvpath = './datadb/'+name+".csv"
-            featpath = csvpath.replace(".csv","_feat.sav")
+            featpath = csvpath.replace(".csv",".feat")
             if os.path.isfile(csvpath):
                 os.remove(csvpath)
             if os.path.isfile(featpath):
@@ -274,9 +274,18 @@ class trainer(object):
             error_box.exec_()
             return
         split = float(split)
+        cluster, ok = QInputDialog.getText(None, 'Cluster step', 'Add cluster step? (yes or no)')
+        while(cluster.lower()!='yes' and cluster.lower()!='no'):
+            if not ok:
+                return
+            cluster, ok = QInputDialog.getText(None, 'Cluster step', 'Add cluster step? (yes or no)')
+
         
         self.led.setPixmap(self.ledR)
-        acc,fa,dr = train_model(self.posSet,self.negSet,split,model_name=model_name)
+        if cluster.lower()=='yes':
+            acc,fa,dr = train_model(self.posSet,self.negSet,split,model_name=model_name)
+        else:
+            acc,fa,dr = train_model(self.posSet,self.negSet,split,model_name=model_name,cluster=False)
         insert_model(model_name)
         self.led.setPixmap(self.ledG)
 

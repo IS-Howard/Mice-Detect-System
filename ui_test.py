@@ -44,7 +44,7 @@ class tester(object):
         self.clear_button.clicked.connect(self.clear_select)
         self.filter_button = QPushButton('Filter')
         self.filter_button.clicked.connect(self.filter)
-        self.resetfilter_button = QPushButton('Filter')
+        self.resetfilter_button = QPushButton('Reset Filter')
         self.resetfilter_button.clicked.connect(self.reset_filter)
         self.listlabel = QLabel('Select data')
         self.list_widget = QListWidget()
@@ -65,7 +65,7 @@ class tester(object):
 
         # test
         self.test_button = QPushButton('Start Testing')
-        # self.test_button.clicked.connect(self.test)
+        self.test_button.clicked.connect(self.test)
 
         # status led
         self.led = QLabel()
@@ -97,12 +97,12 @@ class tester(object):
         Dialog.setLayout(grid)
 
         # init list
-        self.itemlist = []
-        self.click_sel = None
-        self.click_sel2 = None
-        self.filterbox = Filter()
-        self.load_table()
-        self.load_model()
+        # self.itemlist = []
+        # self.click_sel = None
+        # self.click_sel2 = None
+        # self.filterbox = Filter()
+        # self.load_table()
+        # self.load_model()
 
     def load_table(self):
         data_all = load_load()
@@ -145,8 +145,8 @@ class tester(object):
             if editbox.original_name != editbox.name:
                 if os.path.isfile("./datadb/"+editbox.original_name+".csv"):
                     os.rename("./datadb/"+editbox.original_name+".csv","./datadb/"+editbox.name+".csv")
-                if os.path.isfile("./datadb/"+editbox.original_name+"_feat.sav"):
-                    os.rename("./datadb/"+editbox.original_name+"_feat.sav","./datadb/"+editbox.name+"_feat.sav")
+                if os.path.isfile("./datadb/"+editbox.original_name+".feat"):
+                    os.rename("./datadb/"+editbox.original_name+".feat","./datadb/"+editbox.name+".feat")
 
     def filter(self):
         self.filterbox.signal = 0
@@ -194,7 +194,7 @@ class tester(object):
             return
         for name in del_names:
             csvpath = './datadb/'+name+".csv"
-            featpath = csvpath.replace(".csv","_feat.sav")
+            featpath = csvpath.replace(".csv",".feat")
             if os.path.isfile(csvpath):
                 os.remove(csvpath)
             if os.path.isfile(featpath):
@@ -212,7 +212,7 @@ class tester(object):
             return
         
         path1 = './datadb/'+name+".model"
-        path2 = path1.replace(".model",".mclf")
+        path2 = path1.replace(".model",".motion")
         if os.path.isfile(path1):
             os.remove(path1)
         if os.path.isfile(path2):
@@ -221,8 +221,30 @@ class tester(object):
         self.load_model()
         self.click_sel2 = None
 
-    def item_clicked(self,item):
-        self.click_sel = self.list_widget.row(item)
-
     def item_clicked2(self,item):
         self.click_sel2 = item.text()
+
+    def test(self):
+        model_name = self.click_sel2
+        sel_names = []
+        for i in range(self.list_widget.count()):
+            if self.list_widget.item(i).checkState() == 2:
+                sel_names.append(self.itemlist[i].name)
+        if len(sel_names)==0 or model_name==None:
+            return
+        
+        self.led.setPixmap(self.ledR)
+        result_str = ""
+        for feat_name in sel_names:
+            res = test_model(model_name, feat_name)
+            if res[0]==-1:
+                result_str += f'{feat_name}:\tfeature file error\n'
+            result_str += '{:}:\t{:.2f} bad motion, {:.2f} positive, {:.2f} negative\n'.format(feat_name,res[0],res[1],res[2])
+
+        self.led.setPixmap(self.ledG)
+
+        msg = QMessageBox()
+        msg.setText(result_str)
+        msg.setWindowTitle("Testing_Finish")
+        msg.exec_()
+

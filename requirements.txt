@@ -1,22 +1,33 @@
 # cd /mnt/c/Users/x/Desktop/Mice-Detect-System
 # pip install -r requirements.txt
 
+# dependency in linux wsl 
+# sudo apt-get update && sudo apt-get install ffmpeg libsm6 libxext6  -y
+
 #gui
-pyQt5
-pyqtgraph
+pyQt5==5.11.3
+pyqtgraph==0.13.3
 
 #sql
-mysql-connector-python
+mysql-connector-python==8.0.33
 
 #other
 scikit-learn==1.2.2
 numpy==1.24.2
+opencv-python==4.3.0.36
 
+
+# wsl
+# wsl --install
 
 # docker pull mysql (docker load -i ./docker/mysql.tar)
 # docker build -t deeplabcut ./docker --no-cache (docker load -i ./docker/deeplabcut.tar)
-# docker run --name micedb -v /home/x/mysql:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql
+
+# docker run --name micedb -v /mnt/c/Users/x/Desktop/Mice-Detect-System/datadb/mysql:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql
 # docker run -it --name dlc -v /mnt/c/Users/x/Desktop/Mice-Detect-System:/home/MDS -w /home/MDS --gpus all -d deeplabcut
+
+# docker run --name micedb -v C:/Users/x/Desktop/Mice-Detect-System/datadb/mysql:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql
+# docker run -it --name dlc -v C:/Users/x/Desktop/Mice-Detect-System:/home/MDS -w /home/MDS --gpus all -d deeplabcut
 
 
 
@@ -24,3 +35,9 @@ numpy==1.24.2
 #Error response from daemon: Ports are not available Solution
 #net stop winnat
 #net start winnat
+
+
+# libGL error
+# conda install -c conda-forge libstdcxx-ng
+
+

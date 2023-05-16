@@ -20,6 +20,7 @@ class LoadWindow(QDialog):
         self.child.initUI(self)
     def update_init(self):
         self.child.namelist = []
+        self.child.clear_list()
         self.child.click_sel = None
         self.show()
 
@@ -31,7 +32,10 @@ class preprocessWindow(QDialog):
     def update_init(self):
         self.child.load_table()
         self.child.click_sel = None
+        self.child.image = QImage()
+        self.child.image_label.setPixmap(QPixmap.fromImage(self.child.image))
         self.show()
+
 
 class trainWindow(QDialog):
     def __init__(self):
@@ -55,28 +59,32 @@ class testWindow(QDialog):
     def update_init(self):
         self.child.itemlist = []
         self.child.click_sel = None
+        self.child.click_sel2 = None
         self.child.filterbox = Filter()
         self.child.load_table()
         self.child.load_model()
         self.show()
 
 if __name__=="__main__":
+    crop_init()
+    load_init()
+    model_init()
+
+
+
     # test insert
-    insert_load('asdf1','Male','','34','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m1.avi','2022','G')
-    insert_load('asdf2','','10','36','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m2.avi','2022','G')
-    insert_load('asdf3','Female','15','','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m3.avi','2022','G')
-    insert_load('asdf4','Female','20','29','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m4.avi','2022','G')
-    insert_load('asdf5','Male','25','19','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m5.avi','2022','G')
-    insert_load('asdf6','','','52','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m6.avi','2022','G')
     # insert_crop('202105',633, 1049, 404, 784)
     # insert_crop('202106',725, 1141, 333, 713)
     # insert_crop('2021',1033, 1449, 264, 644)
     insert_crop('2022',1023,1439,294,674)
-    insert_load('asdf7','','','52','/mnt/c/Users/x/Desktop/Mice-Detect-System/videos/m7.avi')
 
-    crop_init()
-    load_init()
-    model_init()
+    # insert_load('asdf1','Male','','34','./videos/m1.avi','2022','G')
+    # insert_load('asdf2','','10','36','./videos/m2.avi','2022','G')
+    # insert_load('asdf3','Female','15','','./videos/m3.avi','2022','G')
+    # insert_load('asdf4','Female','20','29','./videos/m4.avi','2022','G')
+    # insert_load('asdf5','Male','25','19','./videos/m5.avi','2022','G')
+    # insert_load('asdf6','','','52','./videos/m6.avi','2022','G')
+    # insert_load('asdf7','','','52','./videos/m7.avi')
 
     app = QApplication(sys.argv)
     windows = parentWindow()

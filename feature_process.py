@@ -281,6 +281,9 @@ def read_dlc(dlcfile):
     if not os.path.isfile(dlcfile):
         print("no file")
         return None
+    c = np.genfromtxt(dlcfile, delimiter=",")
+    if len(c) < 10:
+        return []
     raw = np.genfromtxt(dlcfile, delimiter=",")[3:]
     raw = raw.astype(int)
     getcol = tuple(np.arange(len(raw[0]))[np.arange(len(raw[0]))%3!=0])

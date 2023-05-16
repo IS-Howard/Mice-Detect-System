@@ -16,14 +16,15 @@ from sklearn.cluster import KMeans
 # from sklearn.ensemble import RandomForestClassifier
 # from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.svm import SVC
+import os
 
 def load_feat(pnames, nnames, featpath = "./datadb/"):
     #pnames:positive names, nnames:negative names
     pfeats, nfeats = [],[]
     for name in pnames:
-        pfeats.append(joblib.load(featpath+'/'+name+"_feat.sav"))
+        pfeats.append(joblib.load(featpath+'/'+name+".feat"))
     for name in nnames:
-        nfeats.append(joblib.load(featpath+'/'+name+"_feat.sav"))
+        nfeats.append(joblib.load(featpath+'/'+name+".feat"))
     return pfeats, nfeats
 
 def train_balance(x,y):
@@ -71,11 +72,13 @@ def motion_predict(feat, clf, embeder=None):
 
 def pose_cls(pfeats, nfeats, k=50, cls_type='km', clf_type='svm'):
     # get feature
-    feat = np.concatenate(np.concatenate([pfeats,nfeats]))
+    allfeats = pfeats
+    allfeats.extend(nfeats)
+    feat = np.concatenate(allfeats)
 
     # if is lstm => flatten to 2d feature
-    if len(feat.shape)>2:
-        feat = feat.reshape(len(feat), feat.shape[1]*feat.shape[2])
+    # if len(feat.shape)>2:
+    #     feat = feat.reshape(len(feat), feat.shape[1]*feat.shape[2])
     
     # cluster
     motions, mclf = motion_cluster(feat, k, cls_type)
@@ -189,13 +192,15 @@ def analysis(x, y, model):
     return acc,fa,dr
 
 
-def train_model(pnames,nnames,split,model_name=None):
+def train_model(pnames,nnames,split,model_name=None,cluster=True):
     pfeats, nfeats = load_feat(pnames,nnames)
-    feats = pfeats
-    feats.extend(nfeats)
-    motion_score, mclf = pose_cls(pfeats, nfeats, k=50, cls_type='km', clf_type='svm')
-    x_train_n,y_train_n,x_test_n,y_test_n = split_dataset(nfeats, 0, mclf=mclf, motion_score=motion_score, split=split, shuffle=True, motion_del=False)
-    x_train_p,y_train_p,x_test_p,y_test_p = split_dataset(pfeats, 1, mclf=mclf, motion_score=motion_score, split=split, shuffle=True, motion_del=False)
+    if cluster:
+        motion_score, mclf = pose_cls(pfeats, nfeats, k=50, cls_type='km', clf_type='svm')
+        x_train_n,y_train_n,x_test_n,y_test_n = split_dataset(nfeats, 0, mclf=mclf, motion_score=motion_score, split=split, shuffle=True, motion_del=False)
+        x_train_p,y_train_p,x_test_p,y_test_p = split_dataset(pfeats, 1, mclf=mclf, motion_score=motion_score, split=split, shuffle=True, motion_del=False)
+    else:
+        x_train_n,y_train_n,x_test_n,y_test_n = split_dataset(nfeats, 0, mclf=None, motion_score=None, split=split, shuffle=True, motion_del=False)
+        x_train_p,y_train_p,x_test_p,y_test_p = split_dataset(pfeats, 1, mclf=None, motion_score=None, split=split, shuffle=True, motion_del=False)
     x_train = np.concatenate([x_train_n,x_train_p])
     y_train = np.concatenate([y_train_n,y_train_p])
     x_test = np.concatenate([x_test_n,x_test_p])
@@ -206,19 +211,47 @@ def train_model(pnames,nnames,split,model_name=None):
     model.fit(x_train,y_train)
     if model_name:
         joblib.dump(model,'./datadb/'+model_name+'.model')
-        joblib.dump(mclf, './datadb/'+model_name+'.mclf')
+        if cluster:
+            joblib.dump([mclf,motion_score], './datadb/'+model_name+'.motion')
+
     if len(y_test)==0:
         return -1,-1,-1
     acc,fa,dr = analysis(x_test,y_test,model)
 
     return acc,fa,dr
 
-def test_model(model_name, feats):
+def test_model(model_name, feat_name):
     model = joblib.load('./datadb/'+model_name+'.model')
-    mclf = joblib.load('./datadb/'+model_name+'.mclf')
+    cluster = False
+    if os.path.isfile('./datadb/'+model_name+'.motion'):
+        [mclf, motion_score] = joblib.load('./datadb/'+model_name+'.motion')
+        cluster = True
+    feat = joblib.load('./datadb/'+feat_name+'.feat')
 
-    for x in feats:
-        pred = model.predict(x)
+    if not model or len(feat)<10:
+        return [-1,-1,-1,-1]
+    
+    if cluster:
+        motions = motion_predict(feat, mclf)
+        for i in range(len(motion_score)):
+            if motion_score[i] == -1:
+                motions[np.where(motions==i)] = -1 ## bad motion
+        bad_ids = np.where(motions==-1)
+
+    pred = model.predict(feat)
+    if cluster:
+        pred[bad_ids] = -1
+    
+    total = len(pred)
+    if cluster:
+        bad = len(bad_ids[0])/total
+    else:
+        bad = 0
+    pos = len(np.where(pred==1)[0])/total
+    neg = 1-pos-bad
+
+    return [bad, pos, neg, pred]
+
 
 
 

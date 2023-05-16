@@ -69,8 +69,8 @@ class Loader(object):
         Dialog.setLayout(grid)
 
         # init
-        self.namelist = []
-        self.click_sel = None
+        # self.namelist = []
+        # self.click_sel = None
 
 
     def openFileDialog(self):
@@ -113,7 +113,7 @@ class Loader(object):
             error_box.setText("Name exist!")
             error_box.exec_()
             return
-        list_item = QListWidgetItem(f"{name}\t({gender}, {age}, {weight})")
+        list_item = QListWidgetItem(f"{name}\t({gender},\t{age},\t{weight})")
         list_item.setCheckState(0)
         self.list_widget.addItem(list_item)
         self.namelist.append(name)
@@ -123,7 +123,7 @@ class Loader(object):
         self.list_widget.clear()
         self.namelist = []
         for data in data_all:
-            list_item = QListWidgetItem(f"{data[0]}\t({data[1]}, {data[2]}, {data[3]})")
+            list_item = QListWidgetItem(f"{data[0]}\t({data[1]},\t{data[2]},\t{data[3]})")
             list_item.setCheckState(0)
             self.list_widget.addItem(list_item)
             self.namelist.append(data[0])
@@ -149,6 +149,15 @@ class Loader(object):
         if reply != QMessageBox.Ok:
             return
         del_load(del_names)
+        # if preprocess files exist
+        for name in del_names:
+            csvpath = './datadb/'+name+".csv"
+            featpath = csvpath.replace(".csv",".feat")
+            if os.path.isfile(csvpath):
+                os.remove(csvpath)
+            if os.path.isfile(featpath):
+                os.remove(featpath)
+        ##############################
         for i in reversed(remove_indices):
             self.list_widget.takeItem(i)
             del self.namelist[i]
@@ -164,6 +173,13 @@ class Loader(object):
             self.list_widget.takeItem(self.click_sel)
             self.list_widget.insertItem(self.click_sel, editbox.list_item)
             self.namelist[self.click_sel] = editbox.name
+
+            # rename feature file if exist
+            if editbox.original_name != editbox.name:
+                if os.path.isfile("./datadb/"+editbox.original_name+".csv"):
+                    os.rename("./datadb/"+editbox.original_name+".csv","./datadb/"+editbox.name+".csv")
+                if os.path.isfile("./datadb/"+editbox.original_name+".feat"):
+                    os.rename("./datadb/"+editbox.original_name+".feat","./datadb/"+editbox.name+".feat")
 
 
 class Editor(QDialog):
@@ -269,7 +285,7 @@ class Editor(QDialog):
             error_box.setText("Name exist!")
             error_box.exec_()
             return
-        self.list_item = QListWidgetItem(f"{name}\t({gender}, {age}, {weight})")
+        self.list_item = QListWidgetItem(f"{name}\t({gender},\t{age},\t{weight})")
         self.list_item.setCheckState(0)
         self.name = name
         self.close()
