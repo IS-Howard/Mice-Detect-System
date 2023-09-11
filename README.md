@@ -3,7 +3,7 @@ An application to detect mice status and record the results and models of differ
 
 ## Features
 
-* Data Load : load video files and manage it on database
+* Data Load : load video files and manage it on database (MySQL)
 * Feature Process : crop region setup and generate features
 * Train : manage the processed data and select data to train model
 * Test : manage the processed data, models and select data to test model
